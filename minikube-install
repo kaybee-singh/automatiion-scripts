@@ -1,0 +1,10 @@
+echo "Creating user"
+useradd lotus
+echo "Setting password for lotus user to 'redhat'"
+echo 'lotus:redhat' | chpasswd
+su lotus
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+sudo usermod -aG dockerroot $USER && newgrp dockerroot
+sudo chmod 666 /var/run/docker.sock
+minikube start --driver=docker

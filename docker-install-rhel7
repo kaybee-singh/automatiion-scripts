@@ -1,0 +1,11 @@
+echo "### Enabling Repositories ###"
+
+subscription-manager repos --enable=rhel-7-server-rpms \
+  --enable=rhel-7-server-extras-rpms \
+  --enable=rhel-7-server-optional-rpms
+
+echo "### Installing the docker pacakge ###"
+yum install -y docker device-mapper-libs device-mapper-event-libs
+
+echo "### Enabling the docker service ###"
+systemctl enable --now docker.service
