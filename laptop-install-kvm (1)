@@ -1,0 +1,24 @@
+#!/bin/bash
+function installkvm () {
+echo "Installing kvm virt packages"
+dnf install -y qemu-kvm libvirt bridge-utils
+dnf install -y libvirt-devel virt-top libguestfs-tools guestfs-tools
+dnf install -y virt-manager virt-install
+systemctl start libvirtd
+}
+
+function isof () {
+echo "checking if ISO file already exists"
+file=/var/lib/libvirt/images/CentOS-7-x86_64-DVD-2207-02.iso
+if file -b --mime-type $file | grep -q iso; then
+    echo "ISO file already exists so skipping the download"
+else
+echo "ISO file do not exist so download the file now"
+wget -P /var/lib/libvirt/images http://centos.excellmedia.net/7.9.2009/isos/x86_64/CentOS-7-x86_64-DVD-2207-02.iso
+fi
+}
+
+isof
+
+echo "Creating the VM with 4gb Ram and 2 Vcpu"
+virt-install --name centos8 --vcpus 2 --memory 4000 --disk path=/var/lib/libvirt/images/centos8,size=20 --os-variant centos8 --cdrom /var/lib/libvirt/images/CentOS-7-x86_64-DVD-2207-02.iso
