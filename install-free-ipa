@@ -1,0 +1,45 @@
+#!/bin/bash
+
+function network (){
+conn=`nmcli conn show | grep ^v|awk '{print $1}'`
+nmcli conn delete $conn
+dev=nmcli dev| grep ^v | awk '{print $1}'
+nmcli dev delete $dev
+eface=`nmcli device | grep ^e | awk '{print $1}'`
+nmcli conn delete test
+nmcli conn add con-name test ifname $eface type ethernet autoconnect yes ipv4.method auto
+systemctl restart NetworkManager
+}
+
+function sethostname (){
+echo "Setting hostname"
+hostnamectl set-hostname ipa.example.com
+hostname=ipa.example.com
+ips=`ifconfig | grep netmask | grep -v 127| awk '{print $2}'`
+echo "making an entry to /etc/hosts file"
+echo "$ips $hostname" >> /etc/hosts
+}
+
+
+function repository () {
+
+sudo yum -y install epel-release
+sudo yum -y update
+sudo yum  install bind-utils vim
+sudo yum -y install ipa-server
+sudo yum -y install ipa-server-dns bindipa-server  bind-dyndb-ldap
+}
+
+systemctl stop firewalld
+systemctl disable firewalld
+
+function installipa () {
+
+ipa-server-install --hostname=ipa.example.com -n example.com -r EXAMPLE.COM -p redhat@123 -a redhat@123 -U
+
+}
+
+network
+sethostname
+repository
+installipa

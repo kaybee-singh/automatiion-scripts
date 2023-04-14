@@ -1,0 +1,88 @@
+#!/bin/bash
+
+function sethostname (){
+echo "Setting hostname"
+read -p "Enter the hostname to set: " hostname
+hostnamectl set-hostname $hostname
+ips=`ifconfig | grep netmask | grep -v 127| awk '{print $2}'`
+echo "making an entry to /etc/hosts file"
+echo "$ips $hostname" >> /etc/hosts
+}
+
+
+function registraion (){
+echo "Cleaning old subscription data"
+subscription-manager remove --all
+subscription-manager clean
+echo "Registering the system"
+#read -p "Enter the username: " username
+#read -p "Enter the password: " -s password
+subscription-manager register
+echo "Disabling the firewall"
+systemctl stop firewalld;systemctl disable firewalld
+echo "Disabling default repos"
+subscription-manager repos --disable "*"
+echo "Enabling the Satellite repos"
+subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms \
+--enable=rhel-8-for-x86_64-appstream-rpms \
+--enable=satellite-6.12-for-rhel-8-x86_64-rpms \
+--enable=satellite-maintenance-6.12-for-rhel-8-x86_64-rpms
+}
+
+
+function network (){
+conn=`nmcli conn show | grep ^v|awk '{print $1}'`
+nmcli conn delete $conn
+dev=nmcli dev| grep ^v | awk '{print $1}'
+nmcli dev delete $dev
+eface=`nmcli device | grep ^e | awk '{print $1}'`
+nmcli conn delete test
+nmcli conn add con-name test ifname $eface type ethernet autoconnect yes ipv4.method auto
+systemctl restart NetworkManager
+}
+
+function satinstall (){
+echo "Enabling the Satellite module"
+dnf module enable satellite:el8
+echo "Performing the update"
+dnf update
+echo "Installing the Satellite packages"
+dnf install satellite
+echo "Running the Satellite installer"
+satellite-installer --scenario satellite \
+--foreman-initial-organization "pb10" \
+--foreman-initial-location "pb10" \
+--foreman-initial-admin-username admin \
+--foreman-initial-admin-password redhat
+}
+
+echo "Network Configuration"
+ip=`ifconfig | grep netmask | grep -v 127| awk '{print $2}'`
+if [[ $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]];
+then
+echo "IP is already configured skipping network part"
+else
+network
+fi
+
+read -p "Do you want to set hostname? answer yes or no :" set
+if [ $set = yes ];
+then
+sethostname
+elif [ $set = no ];
+then
+echo "Skipping the hostname"
+fi
+
+
+echo "checking Internet connection"
+
+ping -c2 google.com
+if [ $? = 0 ];
+then
+	echo "Internet is working fine proceeding with Satellite installation."
+	registraion
+else
+echo "Fix the internet connection first and then run the script again"
+fi
+
