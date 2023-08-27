@@ -1,0 +1,24 @@
+echo "Creating repo for Jenkins and importing the GPG key"
+
+echo "                                                    "
+
+wget -O /etc/yum.repos.d/jenkins.repo \
+    https://pkg.jenkins.io/redhat-stable/jenkins.repo
+rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+echo "                                                    "
+
+echo "Install Java and Jenkins"
+
+yum install java-17-openjdk
+yum install jenkins
+systemctl daemon-reload
+
+
+echo "                                                    "
+
+echo "Starting the Jenkins service"
+
+systemctl enable jenkins --now
+echo "Disabling the firewall"
+systemctl stop firewalld
