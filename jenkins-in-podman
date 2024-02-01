@@ -1,0 +1,20 @@
+echo "### Enabling Repositories ###"
+
+subscription-manager repos --enable=rhel-7-server-rpms \
+--enable rhel-7-server-extras-rpms
+
+echo "### Installing the podman pacakge ###"
+
+yum -y install podman
+
+echo "Pulling the Jenkins image"
+
+podman pull jenkins/jenkins
+mkdir ~/jenkins
+
+echo "Running the container using podman on 8080 Port"
+
+podman run -d -p 8080:8080 -p 50000:50000 -v /home/username/jenkins:/var/ jenkins/jenkins
+
+echo "To access the Jenkins UI in browser use this url "http://localhost:8080"
+echo "Password of Jenkins UI can be fetched from jenkins container logs with this command. "podman logs container-id""
